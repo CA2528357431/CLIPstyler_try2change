@@ -14,8 +14,6 @@ Hyperparams:
 * `norm_lambda` is the weight parameter for the `norm_loss`
 * `gol_lambda` is the weight parameter for the `gol_loss` (not used for now) 
 
-
-
 Path:
 
 pic1/: the result of "training `frozen generator`"
@@ -23,8 +21,6 @@ pic1/: the result of "training `frozen generator`"
 pic2/: the result of "training `style generator`"
 
 pic3/: the result of "control group"
-
-
 
 Details:
 
@@ -34,36 +30,24 @@ Details:
 Time:
 With `iteration1=250` and `iteration2=250`, the cost of generating will be about 240s on RTX2070-maxq
 
-
-
 Further, `neo_cmp` and `mynetwork_cmp` are "control group", which are used to compare to the new one.
-
-
 
 for example, 
 
-
-
 photo->fire
 
-<img src="file:///E:/stylegan_nada/ori0.jpg" title="" alt="" width="188">
-
-
+![](result/ori.jpg)
 
 train frozen generator(50 iterations per picture)
 
-![](C:\Users\win10\Downloads\png%20(2).png)
+![](result/frozen.png)
 
 train style generator(10 iterations per picture)
 
-![](C:\Users\win10\Downloads\png.png)
-
-
+![](result/new.png)
 
 control group(10 iterations per picture)
 
-![](C:\Users\win10\Downloads\png%20(1).png)
-
-
+![](result/old.png)
 
 as the used time of both groups is nearly the same(about 240s on rtx-2070 maxq), we could assume that the new model is much faster than the control group
