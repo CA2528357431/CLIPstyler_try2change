@@ -33,7 +33,7 @@ gol_lambda = 300
 
 
 
-def train(iteration1, iteration2, pic, source, target):
+def train(iteration1, iteration2, pic, source, target, path):
     input = pic
 
     # opt = optim.Adam(model.parameters(), lr=lr1)
@@ -106,7 +106,7 @@ def train(iteration1, iteration2, pic, source, target):
     neo_pic = model(input)
     pil = topil(neo_pic.squeeze(0).cpu())
     # pil.save(f"{source}-{target}.jpg")
-    pil.save(f"result2.jpg")
+    pil.save(path)
 
 
 pil = Image.open(f"ori0.jpg")
@@ -116,9 +116,10 @@ pic.requires_grad = False
 
 source = "photo"
 target = "Fire"
+path = "result.jpg"
 
 start = time.time()
-train(200, 80, pic, source, target)
+train(200, 80, pic, source, target, path)
 end = time.time()
 usetime = end - start
 print(f"usetime: {usetime}")
