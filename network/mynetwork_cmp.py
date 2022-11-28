@@ -7,16 +7,16 @@ class DownSample(nn.Module):
         super().__init__()
         block1 = nn.Sequential(
             # nn.ReflectionPad2d(1),
-            nn.Conv2d(in_channel, in_channel, kernel_size=(3, 3), padding=1),
-            nn.InstanceNorm2d(in_channel),
-            nn.ReLU(),
+            # nn.Conv2d(in_channel, in_channel, kernel_size=(3, 3), padding=1),
+            # nn.InstanceNorm2d(in_channel),
+            # nn.ReLU(),
             # nn.ReflectionPad2d(1),
             nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=1),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1, stride=2),
+            nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1,stride=2),
             # nn.MaxPool2d(2),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
@@ -39,10 +39,10 @@ class UpSample(nn.Module):
     def __init__(self, in_channel, out_channel):
         super().__init__()
         block1 = nn.Sequential(
-            nn.Conv2d(in_channel, in_channel, kernel_size=(3, 3), padding=(1, 1)),
-            nn.InstanceNorm2d(in_channel),
-            nn.ReLU(),
-            nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=(1, 1)),
+            # nn.ConvTranspose2d(in_channel, in_channel, kernel_size=(3, 3), padding=(1, 1)),
+            # nn.InstanceNorm2d(in_channel),
+            # nn.ReLU(),
+            nn.ConvTranspose2d(in_channel, out_channel, kernel_size=(3, 3), padding=(1, 1)),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -52,7 +52,7 @@ class UpSample(nn.Module):
             nn.ReLU(),
         )
         skip = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, kernel_size=(1, 1)),
+            nn.ConvTranspose2d(in_channel, out_channel, kernel_size=(1, 1)),
         )
 
         self.block1 = block1
@@ -164,7 +164,8 @@ class Unet(nn.Module):
 
         postprocess = nn.Sequential(
             nn.Conv2d(32, 3, kernel_size=(3, 3), padding=1),
-            nn.Tanh()
+            nn.Tanh(),
+            nn.Sigmoid()
 
         )
 

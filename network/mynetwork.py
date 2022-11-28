@@ -16,8 +16,8 @@ class DownSample(nn.Module):
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            # nn.Conv2d(out_channel, out_channel, kernel_size=(4, 4), padding=1,stride=2),
-            nn.MaxPool2d(2),
+            nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1,stride=2),
+            # nn.MaxPool2d(2),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -164,7 +164,8 @@ class Unet(nn.Module):
 
         postprocess = nn.Sequential(
             nn.Conv2d(32, 3, kernel_size=(3, 3), padding=1),
-            nn.Tanh()
+            nn.Tanh(),
+            nn.Sigmoid()
 
         )
 

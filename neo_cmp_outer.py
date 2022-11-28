@@ -4,7 +4,7 @@ import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
 
-from network.mynetwork_cmp import Unet
+from network.styler import Unet
 from loss.loss import CLIPLoss
 from utils.func import get_features,vgg_normalize
 
@@ -12,12 +12,12 @@ import time
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-lr1 = 0.00005
+lr1 = 0.0001
 lr2 = 0.0002
 model = Unet(device)
 # model = Unet().to(device)
 cliploss = CLIPLoss(device)
-mseloss = torch.nn.MSELoss()
+# mseloss = torch.nn.MSELoss()
 vgg = torchvision.models.vgg19(pretrained=True).features.to(device)
 for x in vgg.parameters():
     x.requires_grad = False
@@ -50,16 +50,14 @@ def train(iteration1, iteration2, pic, source, target):
     #
     #
     # torch.save(model,'unet.pth')
-    #
-    # cliploss.fc.requires_grad = False
-    # for x in cliploss.fc.block.parameters():
-    #     x.requires_grad = False
+
 
     # model = torch.load('unet.pth')
 
     pic_f = get_features(vgg_normalize(pic),vgg)
 
     opt = optim.Adam(model.parameters(), lr=lr2)
+    sch = torch.optim.lr_scheduler.StepLR(opt, step_size=100, gamma=0.5)
     for i in range(iteration2):
 
         # opt.zero_grad()
@@ -102,11 +100,11 @@ def train(iteration1, iteration2, pic, source, target):
         pil = topil(neo_pic.squeeze(0).cpu())
         print("iter:", i + 1, "loss:", loss.item())
         if ((i + 1) % 10) == 0:
-            pil.save(f"./pic3/{(i + 1) // 10}.jpg")
+            pil.save(f"./pic2/{(i + 1) // 10}.jpg")
     neo_pic = model(input)
     pil = topil(neo_pic.squeeze(0).cpu())
     # pil.save(f"{source}-{target}.jpg")
-    pil.save(f"result2.jpg")
+    pil.save(f"result.jpg")
 
 
 pil = Image.open(f"ori0.jpg")
@@ -118,7 +116,9 @@ source = "photo"
 target = "Fire"
 
 start = time.time()
-train(250, 250, pic, source, target)
+train(200, 200, pic, source, target)
 end = time.time()
 usetime = end - start
 print(f"usetime: {usetime}")
+
+
