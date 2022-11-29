@@ -164,7 +164,7 @@ class Unet(nn.Module):
 
         postprocess = nn.Sequential(
             nn.Conv2d(32, 3, kernel_size=(3, 3), padding=1),
-            nn.Tanh(),
+            # nn.Tanh(),
             nn.Sigmoid()
 
         )
