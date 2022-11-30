@@ -14,8 +14,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 lr1 = 0.0001
 lr2 = 0.0002
-model = Unet(device)
-# model = Unet().to(device)
+# model = Unet(device)
+model = Unet(device).to(device)
 cliploss = CLIPLoss(device)
 # mseloss = torch.nn.MSELoss()
 vgg = torchvision.models.vgg19(pretrained=True).features.to(device)
@@ -93,9 +93,9 @@ def train(iteration1, iteration2, pic, source, target, path):
 
         print("iter:", i + 1, "loss:", loss.item())
 
-        pil = topil(neo_pic.squeeze(0).cpu())
-        if ((i + 1) % 10) == 0:
-            pil.save(f"./pic2/{(i + 1) // 10}.jpg")
+        # pil = topil(neo_pic.squeeze(0).cpu())
+        # if ((i + 1) % 10) == 0:
+        #     pil.save(f"./pic2/{(i + 1) // 10}.jpg")
 
     neo_pic = model(input)
     pil = topil(neo_pic.squeeze(0).cpu())
@@ -103,14 +103,14 @@ def train(iteration1, iteration2, pic, source, target, path):
     pil.save(path)
 
 
-pil = Image.open(f"ori0.jpg")
+pil = Image.open(f"source_pic/boat.jpg")
 pil = transforms.Resize(size=(512, 512), interpolation=Image.BICUBIC)(pil)
 pic = topic(pil).unsqueeze(0).to(device)
 pic.requires_grad = False
 
 source = "photo"
 target = "Fire"
-path = "result.jpg"
+path = "result3.jpg"
 
 start = time.time()
 train(200, 200, pic, source, target, path)

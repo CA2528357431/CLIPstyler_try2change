@@ -16,8 +16,8 @@ class DownSample(nn.Module):
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1,stride=2),
-            # nn.MaxPool2d(2),
+            # nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1,stride=2),
+            nn.MaxPool2d(2),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -43,6 +43,7 @@ class UpSample(nn.Module):
             # nn.InstanceNorm2d(in_channel),
             # nn.ReLU(),
             nn.ConvTranspose2d(in_channel, out_channel, kernel_size=(3, 3), padding=(1, 1)),
+            # nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=(1, 1)),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -53,6 +54,7 @@ class UpSample(nn.Module):
         )
         skip = nn.Sequential(
             nn.ConvTranspose2d(in_channel, out_channel, kernel_size=(1, 1)),
+            # nn.Conv2d(in_channel, out_channel, kernel_size=(1, 1)),
         )
 
         self.block1 = block1

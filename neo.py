@@ -43,14 +43,16 @@ def train(iteration1, iteration2, pic, source, target, path):
         loss = mseloss(pic, neo_pic) * 1
         loss.backward()
         opt.step()
-        pil = topil(neo_pic.squeeze(0).cpu())
         print("iter:", i + 1, "loss:", loss.item())
-        if ((i + 1) % 50) == 0:
-            pil.save(f"./pic1/{(i + 1) // 50}.jpg")
+
+        # pil = topil(neo_pic.squeeze(0).cpu())
+        # if ((i + 1) % 50) == 0:
+        #     pil.save(f"./pic1/{(i + 1) // 50}.jpg")
 
 
-    torch.save(model,'unet.pth')
-    #
+    # torch.save(model,'unet.pth')
+
+
     # cliploss.fc.requires_grad = False
     # for x in cliploss.fc.block.parameters():
     #     x.requires_grad = False
@@ -70,7 +72,7 @@ def train(iteration1, iteration2, pic, source, target, path):
         dir_loss += cliploss.forward_dir(pic, source, neo_pic, target)
 
         gol_loss = 0
-        # gol_loss += cliploss.forward_gol(pic, source, neo_pic, target)
+        gol_loss += cliploss.forward_gol(pic, source, neo_pic, target)
 
         content_loss = 0
         # neo_pic_f = get_features(vgg_normalize(neo_pic), vgg)
@@ -96,9 +98,9 @@ def train(iteration1, iteration2, pic, source, target, path):
         print("iter:", i + 1, "loss:", loss.item())
 
 
-        pil = topil(neo_pic.squeeze(0).cpu())
-        if ((i + 1) % 10) == 0:
-            pil.save(f"./pic2/{(i + 1) // 10}.jpg")
+        # pil = topil(neo_pic.squeeze(0).cpu())
+        # if ((i + 1) % 10) == 0:
+        #     pil.save(f"./pic2/{(i + 1) // 10}.jpg")
 
     neo_pic = model(input)
     pil = topil(neo_pic.squeeze(0).cpu())
@@ -106,17 +108,17 @@ def train(iteration1, iteration2, pic, source, target, path):
     pil.save(path)
 
 
-pil = Image.open(f"ori0.jpg")
+pil = Image.open(f"source_pic/boat.jpg")
 pil = transforms.Resize(size=(512, 512), interpolation=Image.BICUBIC)(pil)
 pic = topic(pil).unsqueeze(0).to(device)
 pic.requires_grad = False
 
 source = "photo"
 target = "Fire"
-path = "result.jpg"
+path = "result1.jpg"
 
 start = time.time()
-train(100, 80, pic, source, target, path)
+train(100, 100, pic, source, target, path)
 end = time.time()
 usetime = end - start
 print(f"usetime: {usetime}")

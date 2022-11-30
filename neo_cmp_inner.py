@@ -4,7 +4,7 @@ import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
 
-from network.styler import Unet
+from network.mynetwork import Unet
 from loss.loss import CLIPLoss
 from utils.func import get_features,vgg_normalize
 
@@ -15,7 +15,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 lr1 = 0.0001
 lr2 = 0.0002
 # model = Unet(device)
-model = Unet().to(device)
+model = Unet(device).to(device)
 cliploss = CLIPLoss(device)
 # mseloss = torch.nn.MSELoss()
 vgg = torchvision.models.vgg19(pretrained=True).features.to(device)
@@ -48,9 +48,9 @@ def train(iteration1, iteration2, pic, source, target, path):
     #     if ((i + 1) % 50) == 0:
     #         pil.save(f"./pic1/{(i + 1) // 50}.jpg")
     #
-    #
+
     # torch.save(model,'unet.pth')
-    #
+
     # cliploss.fc.requires_grad = False
     # for x in cliploss.fc.block.parameters():
     #     x.requires_grad = False
@@ -95,9 +95,9 @@ def train(iteration1, iteration2, pic, source, target, path):
 
         print("iter:", i + 1, "loss:", loss.item())
 
-        pil = topil(neo_pic.squeeze(0).cpu())
-        if ((i + 1) % 10) == 0:
-            pil.save(f"./pic3/{(i + 1) // 10}.jpg")
+        # pil = topil(neo_pic.squeeze(0).cpu())
+        # if ((i + 1) % 10) == 0:
+        #     pil.save(f"./pic3/{(i + 1) // 10}.jpg")
 
 
     neo_pic = model(input)
@@ -106,17 +106,17 @@ def train(iteration1, iteration2, pic, source, target, path):
     pil.save(path)
 
 
-pil = Image.open(f"ori0.jpg")
+pil = Image.open(f"source_pic/boat.jpg")
 pil = transforms.Resize(size=(512, 512), interpolation=Image.BICUBIC)(pil)
 pic = topic(pil).unsqueeze(0).to(device)
 pic.requires_grad = False
 
 source = "photo"
 target = "Fire"
-path = "result.jpg"
+path = "result2.jpg"
 
 start = time.time()
-train(200, 80, pic, source, target, path)
+train(200, 200, pic, source, target, path)
 end = time.time()
 usetime = end - start
 print(f"usetime: {usetime}")
