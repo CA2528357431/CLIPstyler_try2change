@@ -113,19 +113,20 @@ class Unet(nn.Module):
             # ResBlock(256, 256),
         )
         # 256 w/8 h/8
-        conv4 = nn.Sequential(
-            DownSample(256, 512),
-            # ResBlock(512, 512),
-        )
+        # conv4 = nn.Sequential(
+        #     DownSample(256, 512),
+        #     # ResBlock(512, 512),
+        # )
         # 512 w/16 h/16
 
-        res = nn.Sequential(*[ResBlock(512, 512) for _ in range(4)])
+        # res = nn.Sequential(*[ResBlock(512, 512) for _ in range(2)])
+        res = nn.Sequential(*[ResBlock(256, 256) for _ in range(2)])
         # 512 w/16 h/16
 
-        upsample4 = nn.Sequential(
-            UpSample(512, 256),
-            # ResBlock(256, 256),
-        )
+        # upsample4 = nn.Sequential(
+        #     UpSample(512, 256),
+        #     # ResBlock(256, 256),
+        # )
 
         upsample3 = nn.Sequential(
             UpSample(256, 128),
@@ -142,10 +143,10 @@ class Unet(nn.Module):
             # ResBlock(32, 32),
         )
 
-        deconv4 = nn.Sequential(
-            ResBlock(512, 256),
-            ResBlock(256, 256),
-        )
+        # deconv4 = nn.Sequential(
+        #     ResBlock(512, 256),
+        #     ResBlock(256, 256),
+        # )
 
         deconv3 = nn.Sequential(
             ResBlock(256, 128),
@@ -176,16 +177,16 @@ class Unet(nn.Module):
         self.conv1 = conv1.to(device)
         self.conv2 = conv2.to(device)
         self.conv3 = conv3.to(device)
-        self.conv4 = conv4.to(device)
+        # self.conv4 = conv4.to(device)
         self.res = res.to(device)
         self.deconv1 = deconv1.to(device)
         self.deconv2 = deconv2.to(device)
         self.deconv3 = deconv3.to(device)
-        self.deconv4 = deconv4.to(device)
+        # self.deconv4 = deconv4.to(device)
         self.upsample1 = upsample1.to(device)
         self.upsample2 = upsample2.to(device)
         self.upsample3 = upsample3.to(device)
-        self.upsample4 = upsample4.to(device)
+        # self.upsample4 = upsample4.to(device)
         self.postprocess = postprocess.to(device)
 
     def forward(self, x):
@@ -195,13 +196,14 @@ class Unet(nn.Module):
         l2 = self.conv1(l1)
         l3 = self.conv2(l2)
         l4 = self.conv3(l3)
-        l5 = self.conv4(l4)
+        # l5 = self.conv4(l4)
 
-        r5 = self.res(l5)
+        # r5 = self.res(l5)
+        r4 = self.res(l4)
 
-        r4p = self.upsample4(r5)
-        r4f = torch.cat([l4, r4p], dim=1)
-        r4 = self.deconv4(r4f)
+        # r4p = self.upsample4(r5)
+        # r4f = torch.cat([l4, r4p], dim=1)
+        # r4 = self.deconv4(r4f)
         r3p = self.upsample3(r4)
         r3f = torch.cat([l3, r3p], dim=1)
         r3 = self.deconv3(r3f)

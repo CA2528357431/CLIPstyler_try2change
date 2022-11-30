@@ -15,7 +15,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 lr1 = 0.0001
 lr2 = 0.0002
 # model = Unet(device)
-model = Unet().to(device)
+model = Unet(device).to(device)
 cliploss = CLIPLoss(device)
 mseloss = torch.nn.MSELoss()
 # vgg = torchvision.models.vgg19(pretrained=True).features.to(device)

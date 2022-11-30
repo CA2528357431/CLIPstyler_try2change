@@ -14,40 +14,23 @@ Hyperparams:
 * `norm_lambda` is the weight parameter for the `norm_loss`
 * `gol_lambda` is the weight parameter for the `gol_loss` (not used for now) 
 
-Path:
-
-pic1/: the result of "training `frozen generator`"
-
-pic2/: the result of "training `style generator`"
-
-pic3/: the result of "control group"
-
-Details:
 
 * the `source` and `target` decide the process of generating
 * use `content_loss` to train the `frozen generator` first, then continue with the loss function to generate a target pic 
 
 Time:
-With `iteration1=250` and `iteration2=250`, the cost of generating will be about 240s on RTX2070-maxq
+With `iteration1=100` and `iteration2=100`, the cost of generating will be about 100s on RTX2070-maxq
 
-Further, `neo_cmp` and `mynetwork_cmp` are "control group", which are used to compare to the new one.
+Network:
+`mynetwork` is ours network
+`styler` is the origin network
+`mynetwork_cmp` todo
 
-for example, 
+train:
+`neo` is a training process with our new idea and our model
+`neo_cmp_inner` is a training process with the original idea and our model
+`neo_cmp_outer` is a training process with styler
 
-photo->fire
 
-![](result/ori.jpg)
-
-train frozen generator(50 iterations per picture)
-
-![](result/frozen.png)
-
-train style generator(10 iterations per picture)
-
-![](result/new.png)
-
-control group(10 iterations per picture)
-
-![](result/old.png)
 
 as the used time of both groups is nearly the same(about 240s on rtx-2070 maxq), we could assume that the new model is much faster than the control group
