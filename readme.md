@@ -31,6 +31,7 @@ train:
 `neo_cmp_inner` is a training process with the original idea and our model
 `neo_cmp_outer` is a training process with styler
 
-
+count:
+a script used to count params and FLOPs
 
 as the used time of both groups is nearly the same(about 240s on rtx-2070 maxq), we could assume that the new model is much faster than the control group
