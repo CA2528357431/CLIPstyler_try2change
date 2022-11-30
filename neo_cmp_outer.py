@@ -98,10 +98,12 @@ def train(iteration1, iteration2, pic, source, target, path):
         opt.step()
         sch.step()
 
-        pil = topil(neo_pic.squeeze(0).cpu())
         print("iter:", i + 1, "loss:", loss.item())
+
+        pil = topil(neo_pic.squeeze(0).cpu())
         if ((i + 1) % 10) == 0:
             pil.save(f"./pic2/{(i + 1) // 10}.jpg")
+
     neo_pic = model(input)
     pil = topil(neo_pic.squeeze(0).cpu())
     # pil.save(f"{source}-{target}.jpg")
