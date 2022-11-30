@@ -60,13 +60,6 @@ def train(iteration1, iteration2, pic, source, target, path):
     sch = torch.optim.lr_scheduler.StepLR(opt, step_size=100, gamma=0.5)
     for i in range(iteration2):
 
-        # opt.zero_grad()
-        # neo_pic = model(input)
-        # loss = cliploss.forward_gol(pic, source, neo_pic, target) * 1
-        # loss.backward()
-        # opt.step()
-
-
 
         opt.zero_grad()
         neo_pic = model(input)

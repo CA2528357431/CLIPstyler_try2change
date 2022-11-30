@@ -62,13 +62,6 @@ def train(iteration1, iteration2, pic, source, target, path):
     opt = optim.Adam(model.parameters(), lr=lr2)
     for i in range(iteration2):
 
-        # opt.zero_grad()
-        # neo_pic = model(input)
-        # loss = cliploss.forward_gol(pic, source, neo_pic, target) * 1
-        # loss.backward()
-        # opt.step()
-
-
 
         opt.zero_grad()
         neo_pic = model(input)
