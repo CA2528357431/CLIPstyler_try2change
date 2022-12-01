@@ -67,5 +67,3 @@ print('Params = ' + str((sty_params+clip_params+vgg_params)/1000**2) + 'M')
 
 print()
 
-
-

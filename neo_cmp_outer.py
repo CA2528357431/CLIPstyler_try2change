@@ -13,7 +13,7 @@ import time
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 lr1 = 0.0001
-lr2 = 0.0002
+lr2 = 0.0005
 # model = Unet(device)
 model = Unet(device).to(device)
 cliploss = CLIPLoss(device)

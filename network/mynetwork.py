@@ -16,8 +16,8 @@ class DownSample(nn.Module):
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            # nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1,stride=2),
-            nn.MaxPool2d(2),
+            nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1, stride=2),
+            # nn.MaxPool2d(2),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -48,7 +48,8 @@ class UpSample(nn.Module):
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True),
+            nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(3, 3), padding=(1, 1), stride=2, output_padding=1),
+            # nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -206,6 +207,8 @@ class Unet(nn.Module):
         # r4p = self.upsample4(r5)
         # r4f = torch.cat([l4, r4p], dim=1)
         # r4 = self.deconv4(r4f)
+
+
         r3p = self.upsample3(r4)
         r3f = torch.cat([l3, r3p], dim=1)
         r3 = self.deconv3(r3f)
