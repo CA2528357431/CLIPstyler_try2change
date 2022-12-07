@@ -255,7 +255,7 @@ class CLIPLoss(torch.nn.Module):
             self.target_direction = self.compute_text_direction(source_class, target_class).detach()
 
         patch_size = 128
-        patch_num = 64
+        patch_num = 128
 
         patch_points = self.random_patch_points(src_img.shape, patch_num, patch_size)
 

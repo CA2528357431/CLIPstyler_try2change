@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 
 class NoiseInjection(nn.Module):
-    def __init__(self):
+    def __init__(self, weight):
         super().__init__()
 
-        self.weight = 1
+        self.weight = weight
 
     def forward(self, image):
         batch, channel, height, width = image.shape
@@ -38,7 +38,7 @@ class DownSample(nn.Module):
         self.block1 = block1
         self.block2 = block2
         self.skip = skip
-        self.noise = NoiseInjection()
+#         self.noise = NoiseInjection()
 
 
 
@@ -46,7 +46,7 @@ class DownSample(nn.Module):
     def forward(self, x):
         x = self.block1(x) + self.skip(x)
         res = self.block2(x)
-        res = self.noise(res)
+#         res = self.noise(res)
         return res
 
 class UpSample(nn.Module):
@@ -75,13 +75,13 @@ class UpSample(nn.Module):
         self.block1 = block1
         self.block2 = block2
         self.skip = skip
-        self.noise = NoiseInjection()
+#         self.noise = NoiseInjection()
 
 
     def forward(self, x):
         x = self.block1(x) + self.skip(x)
         res = self.block2(x)
-        res = self.noise(res)
+#         res = self.noise(res)
         return res
 
 
@@ -97,13 +97,13 @@ class ResBlock(nn.Module):
         self.block = block
         self.in_channel = in_channel
         self.out_channel = out_channel
-        self.noise = NoiseInjection()
+#         self.noise = NoiseInjection()
 
     def forward(self, x):
         if self.in_channel == self.out_channel:
             return self.block(x) + x
         res = self.block(x)
-        res = self.noise(res)
+#         res = self.noise(res)
         return res
 
 
@@ -119,21 +119,26 @@ class Unet(nn.Module):
             nn.InstanceNorm2d(32),
             nn.ReLU(),
             ResBlock(32, 32),
+            #             NoiseInjection(0.2),
         )
         # 32 w h
         conv1 = nn.Sequential(
             DownSample(32, 64),
             # ResBlock(64, 64),
+            NoiseInjection(0.2),
+
         )
         # 64 w/2 h/2
         conv2 = nn.Sequential(
             DownSample(64, 128),
             # ResBlock(128, 128),
+            NoiseInjection(0.1),
         )
         # 128 w/4 h/4
         conv3 = nn.Sequential(
             DownSample(128, 256),
             # ResBlock(256, 256),
+            NoiseInjection(0.1),
         )
         # 256 w/8 h/8
         # conv4 = nn.Sequential(
@@ -142,8 +147,18 @@ class Unet(nn.Module):
         # )
         # 512 w/16 h/16
 
-        res = nn.Sequential(*[ResBlock(256, 256) for _ in range(2)])
-        res2 = nn.Sequential(*[ResBlock(128, 128) for _ in range(2)])
+        res = nn.Sequential(
+            ResBlock(256, 256),
+            NoiseInjection(0.1),
+            ResBlock(256, 256),
+            NoiseInjection(0.1),
+        )
+        res2 = nn.Sequential(
+            ResBlock(128, 128),
+            NoiseInjection(0.1),
+            ResBlock(128, 128),
+            NoiseInjection(0.1),
+        )
         # 512 w/16 h/16
 
         # upsample4 = nn.Sequential(
@@ -154,16 +169,19 @@ class Unet(nn.Module):
         upsample3 = nn.Sequential(
             UpSample(256, 128),
             # ResBlock(128, 128),
+            NoiseInjection(0.1),
         )
 
         upsample2 = nn.Sequential(
             UpSample(128, 64),
             # ResBlock(64, 64),
+            NoiseInjection(0.1),
         )
 
         upsample1 = nn.Sequential(
             UpSample(64, 32),
             # ResBlock(32, 32),
+            NoiseInjection(0.2),
         )
 
         # deconv4 = nn.Sequential(
@@ -173,17 +191,23 @@ class Unet(nn.Module):
 
         deconv3 = nn.Sequential(
             ResBlock(256, 128),
-            # ResBlock(128, 128),
+            NoiseInjection(0.1),
+            ResBlock(128, 128),
+            NoiseInjection(0.1)
         )
 
         deconv2 = nn.Sequential(
             ResBlock(128, 64),
-            # ResBlock(64, 64),
+            NoiseInjection(0.1),
+            ResBlock(64, 64),
+            NoiseInjection(0.1)
         )
 
         deconv1 = nn.Sequential(
             ResBlock(64, 32),
-            # ResBlock(32, 32),
+            NoiseInjection(0.2),
+            ResBlock(32, 32),
+            NoiseInjection(0.2)
         )
 
         postprocess = nn.Sequential(
@@ -242,9 +266,3 @@ class Unet(nn.Module):
         # output = torch.nn.functional.interpolate(output, size=(224,224), mode='bilinear')
 
         return output
-
-
-
-
-
-
