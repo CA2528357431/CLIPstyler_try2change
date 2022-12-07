@@ -1,6 +1,16 @@
 import torch
 import torch.nn as nn
 
+class NoiseInjection(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.weight = 1
+
+    def forward(self, image):
+        batch, channel, height, width = image.shape
+        noise = image.new_empty(batch, 1, height, width).normal_()
+        return image + self.weight * noise
 
 class DownSample(nn.Module):
     def __init__(self, in_channel, out_channel):
@@ -10,14 +20,14 @@ class DownSample(nn.Module):
             # nn.Conv2d(in_channel, in_channel, kernel_size=(3, 3), padding=1),
             # nn.InstanceNorm2d(in_channel),
             # nn.ReLU(),
-            # nn.ReflectionPad2d(1),
-            nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=1),
+            nn.ReflectionPad2d(1),
+            nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=0),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1, stride=2),
-            # nn.MaxPool2d(2),
+            # nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1, stride=2),
+            nn.MaxPool2d(2),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -28,11 +38,15 @@ class DownSample(nn.Module):
         self.block1 = block1
         self.block2 = block2
         self.skip = skip
+        self.noise = NoiseInjection()
+
+
 
 
     def forward(self, x):
         x = self.block1(x) + self.skip(x)
         res = self.block2(x)
+        res = self.noise(res)
         return res
 
 class UpSample(nn.Module):
@@ -48,8 +62,8 @@ class UpSample(nn.Module):
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(3, 3), padding=(1, 1), stride=2, output_padding=1),
-            # nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True),
+            # nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(3, 3), padding=(1, 1), stride=2, output_padding=1),
+            nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -80,6 +94,7 @@ class ResBlock(nn.Module):
         self.block = block
         self.in_channel = in_channel
         self.out_channel = out_channel
+        # self.noise = NoiseInjection()
 
     def forward(self, x):
         if self.in_channel == self.out_channel:
@@ -93,9 +108,9 @@ class Unet(nn.Module):
 
         # 3 w h
         preprocess = nn.Sequential(
-            # nn.ReflectionPad2d(4),
+            nn.ReflectionPad2d(4),
             # nn.Conv2d(3, 32, kernel_size=(9, 9)),
-            nn.Conv2d(3, 32, kernel_size=(9, 9), padding=4),
+            nn.Conv2d(3, 32, kernel_size=(9, 9), padding=0),
             nn.InstanceNorm2d(32),
             nn.ReLU(),
             ResBlock(32, 32),
@@ -223,3 +238,7 @@ class Unet(nn.Module):
         # output = torch.nn.functional.interpolate(output, size=(224,224), mode='bilinear')
 
         return output
+
+
+
+

@@ -12,15 +12,15 @@ import time
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-lr1 = 0.0001
+lr1 = 0.0004
 lr2 = 0.0002
 # model = Unet(device)
 model = Unet(device).to(device)
 cliploss = CLIPLoss(device)
 mseloss = torch.nn.MSELoss()
-# vgg = torchvision.models.vgg19(pretrained=True).features.to(device)
-# for x in vgg.parameters():
-#     x.requires_grad = False
+vgg = torchvision.models.vgg19(pretrained=True).features.to(device)
+for x in vgg.parameters():
+    x.requires_grad = False
 
 topil = transforms.ToPILImage()
 topic = transforms.ToTensor()
@@ -33,14 +33,24 @@ gol_lambda = 300
 
 
 
-def train(iteration1, iteration2, pic, source, target, path):
+def train(iteration1, iteration2, pic, source, target):
     input = pic
 
     opt = optim.Adam(model.parameters(), lr=lr1)
+    pic_f = get_features(vgg_normalize(pic),vgg)
     for i in range(iteration1):
         opt.zero_grad()
         neo_pic = model(input)
-        loss = mseloss(pic, neo_pic) * 1
+
+        loss = 0
+
+        loss += mseloss(pic, neo_pic) * 1
+
+        # neo_pic_f = get_features(vgg_normalize(neo_pic), vgg)
+        # loss += torch.mean((pic_f['conv4_2'] - neo_pic_f['conv4_2']) ** 2)
+        # loss += torch.mean((pic_f['conv5_2'] - neo_pic_f['conv5_2']) ** 2)
+
+
         loss.backward()
         opt.step()
         print("iter:", i + 1, "loss:", loss.item())
@@ -102,13 +112,14 @@ def train(iteration1, iteration2, pic, source, target, path):
         # if ((i + 1) % 10) == 0:
         #     pil.save(f"./pic2/{(i + 1) // 10}.jpg")
 
-    neo_pic = model(input)
-    pil = topil(neo_pic.squeeze(0).cpu())
-    # pil.save(f"{source}-{target}.jpg")
-    pil.save(path)
+    # neo_pic = model(input)
+    # pil = topil(neo_pic.squeeze(0).cpu())
+    # # pil.save(f"{source}-{target}.jpg")
+    # pil.save(path)
 
 
 pil = Image.open(f"source_pic/boat.jpg")
+ori_size = pil.size[::-1]
 pil = transforms.Resize(size=(512, 512), interpolation=Image.BICUBIC)(pil)
 pic = topic(pil).unsqueeze(0).to(device)
 pic.requires_grad = False
@@ -118,7 +129,12 @@ target = "Fire"
 path = "result1.jpg"
 
 start = time.time()
-train(100, 100, pic, source, target, path)
+train(100, 100, pic, source, target)
 end = time.time()
 usetime = end - start
 print(f"usetime: {usetime}")
+
+neo_pic = model(pic)
+pil = topil(neo_pic.squeeze(0).cpu())
+pil = transforms.Resize(size=ori_size, interpolation=Image.BICUBIC)(pil)
+pil.save(path)

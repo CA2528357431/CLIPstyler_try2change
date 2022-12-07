@@ -31,12 +31,12 @@ class FC(nn.Module):
             # nn.Linear(channel, channel),
         )
         self.block.apply(init_fc)
-        # for x in self.block.parameters():
-        #     x.requires_grad = False
-        # self.requires_grad = False
+        for x in self.block.parameters():
+            x.requires_grad = False
+        self.requires_grad = False
 
     def forward(self, x):
-        x = x.float()
+        # x = x.float()
         x = self.block(x)
         # min = x.min()
         # max = x.max()
@@ -129,6 +129,8 @@ class CLIPLoss(torch.nn.Module):
         #     self.fc = torch.load('fc2.pth')
         # else:
         #     self.fc.block.apply(init_fc)
+
+
 
         self.target_direction = None
         self.src_text_features = None
@@ -247,25 +249,42 @@ class CLIPLoss(torch.nn.Module):
         return patches
 
     def patch_directional_loss(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor,
-                               target_class: str) -> torch.Tensor:
+                               target_class: str):
 
         if self.target_direction is None:
             self.target_direction = self.compute_text_direction(source_class, target_class).detach()
 
         patch_size = 128
+        patch_num = 64
 
-        patch_points = self.random_patch_points(src_img.shape, 64, patch_size)
+        patch_points = self.random_patch_points(src_img.shape, patch_num, patch_size)
 
         src_patches = self.generate_patches(src_img, patch_points, patch_size)
         src_features = self.get_image_features(src_patches)
 
-        src_patches = self.generate_patches(target_img, patch_points, patch_size)
-        target_features = self.get_image_features(src_patches)
+        target_patches = self.generate_patches(target_img, patch_points, patch_size)
+        target_features = self.get_image_features(target_patches)
 
         edit_direction = (target_features - src_features)
         edit_direction /= edit_direction.clone().norm(dim=-1, keepdim=True)
 
-        return self.direction_loss(edit_direction, self.target_direction).mean()
+        dirs = self.direction_loss(edit_direction, self.target_direction)
+        # with torch.no_grad():
+        #     avg = dirs.mean()
+        # #     delta = ((dirs-avg)**2).mean()
+        # # # cnt = 0
+        #
+        #
+        # fast = torch.zeros(1,).to(self.device)
+        # slow = torch.zeros(1,).to(self.device)
+        # for i in range(patch_num):
+        #     if dirs[i] <= avg:
+        #         fast += dirs[i]
+        #     elif dirs[i] >= avg:
+        #         slow += dirs[i]
+
+        return dirs.mean()
+
 
     def get_image_prior_losses(self, inputs_jit):
         diff1 = inputs_jit[:, :, :, :-1] - inputs_jit[:, :, :, 1:]
@@ -307,7 +326,62 @@ class CLIPLoss(torch.nn.Module):
         # print(loss1.item(),loss2.item(),loss3.item(),loss4.item())
         # loss += loss1 + loss2 + loss3 + loss4
         # loss.requires_grad = True
+
         return patch_loss
+
+
+    def patch_directional_loss_sec(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor,
+                               target_class: str):
+
+        if self.target_direction is None:
+            self.target_direction = self.compute_text_direction(source_class, target_class).detach()
+
+        patch_size = 128
+        patch_num = 64
+
+        patch_points = self.random_patch_points(src_img.shape, patch_num, patch_size)
+
+        src_patches = self.generate_patches(src_img, patch_points, patch_size)
+        src_features = self.get_image_features(src_patches)
+
+        target_patches = self.generate_patches(target_img, patch_points, patch_size)
+        target_features = self.get_image_features(target_patches)
+
+        edit_direction = (target_features - src_features)
+        edit_direction /= edit_direction.clone().norm(dim=-1, keepdim=True)
+
+        dirs = self.direction_loss(edit_direction, self.target_direction)
+        with torch.no_grad():
+            avg = dirs.mean()
+        #     delta = ((dirs-avg)**2).mean()
+        # # cnt = 0
+
+
+        fast = torch.zeros(1,).to(self.device)
+        slow = torch.zeros(1,).to(self.device)
+        for i in range(patch_num):
+            if dirs[i] <= avg:
+                fast += dirs[i]
+            else:
+                slow += dirs[i]
+
+
+        return fast/patch_num, slow/patch_num
+
+    def forward_patch_sec(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor, target_class: str):
+
+        # dir_loss = 1 * self.clip_directional_loss(src_img, source_class, target_img, target_class)
+        #### patch_loss = 1 * self.patch_directional_loss(src_img, source_class, target_img, target_class)
+        # dir_loss = 1 * self.global_clip_loss(target_img, f"a {target_class}")
+        # dir_loss += 1 * self.clip_angle_loss(src_img, source_class, target_img, target_class)
+        # print(loss1.item(),loss2.item(),loss3.item(),loss4.item())
+        # loss += loss1 + loss2 + loss3 + loss4
+        # loss.requires_grad = True
+        fast, slow = 1 * self.patch_directional_loss_sec(src_img, source_class, target_img,
+                                                                             target_class)
+        return fast, slow
+
+
 
     ################################################################
 
@@ -372,3 +446,18 @@ class CLIPLoss(torch.nn.Module):
     #     return self.angle_loss(cos_img_angle, cos_text_angle)
     #
     #
+
+
+        #
+        # dirs = self.direction_loss(edit_direction, self.target_direction)
+        # # print(dirs)
+        # avg = dirs.mean()
+        # sqr = ((dirs-avg)**2).mean()
+        # sqr = 0
+        # s = 0
+        # cnt = 0
+        # for x in dirs:
+        #     if x>=avg-sqr:
+        #         s+=x
+        #         cnt+=1
+        # return s/cnt
