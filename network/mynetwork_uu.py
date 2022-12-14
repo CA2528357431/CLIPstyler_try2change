@@ -11,17 +11,18 @@ class NoiseInjection(nn.Module):
         batch, channel, height, width = image.shape
         noise = image.new_empty(batch, 1, height, width).normal_()
         return image + self.weight * noise
+        # return image
 
 class DownSample(nn.Module):
     def __init__(self, in_channel, out_channel):
         super().__init__()
         block1 = nn.Sequential(
             # nn.ReflectionPad2d(1),
-            # nn.Conv2d(in_channel, in_channel, kernel_size=(3, 3), padding=1),
+            # nn.Conv2d(in_channel, in_channel, kernel_size=(3, 3), padding=0),
             # nn.InstanceNorm2d(in_channel),
             # nn.ReLU(),
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=0),
+            # nn.ReflectionPad2d(1),
+            nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=1),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -32,7 +33,9 @@ class DownSample(nn.Module):
             nn.ReLU(),
         )
         skip = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, kernel_size=(1, 1)),
+            nn.Conv2d(in_channel, out_channel, kernel_size=(1, 1), stride=2),
+            nn.InstanceNorm2d(out_channel),
+            nn.ReLU(),
         )
 
         self.block1 = block1
@@ -44,8 +47,8 @@ class DownSample(nn.Module):
 
 
     def forward(self, x):
-        x = self.block1(x) + self.skip(x)
-        res = self.block2(x)
+        res = self.block1(x)
+        res = self.block2(res) + self.skip(x)
 #         res = self.noise(res)
         return res
 
@@ -68,8 +71,10 @@ class UpSample(nn.Module):
             nn.ReLU(),
         )
         skip = nn.Sequential(
-            nn.ConvTranspose2d(in_channel, out_channel, kernel_size=(1, 1)),
+            nn.ConvTranspose2d(in_channel, out_channel, kernel_size=(1, 1), stride=2, output_padding=1),
             # nn.Conv2d(in_channel, out_channel, kernel_size=(1, 1)),
+            nn.InstanceNorm2d(out_channel),
+            nn.ReLU(),
         )
 
         self.block1 = block1
@@ -79,8 +84,8 @@ class UpSample(nn.Module):
 
 
     def forward(self, x):
-        x = self.block1(x) + self.skip(x)
-        res = self.block2(x)
+        res = self.block1(x)
+        res = self.block2(res) + self.skip(x)
 #         res = self.noise(res)
         return res
 
@@ -113,9 +118,12 @@ class Unet(nn.Module):
 
         # 3 w h
         preprocess = nn.Sequential(
-            nn.ReflectionPad2d(4),
+            # nn.ReflectionPad2d(4),
             # nn.Conv2d(3, 32, kernel_size=(9, 9)),
-            nn.Conv2d(3, 32, kernel_size=(9, 9), padding=0),
+            # nn.Conv2d(3, 32, kernel_size=(9, 9), padding=4),
+            nn.ReflectionPad2d(1),
+            nn.Conv2d(3, 32, kernel_size=(3, 3)),
+            # nn.Conv2d(3, 32, kernel_size=(3, 3), padding=1),
             nn.InstanceNorm2d(32),
             nn.ReLU(),
             ResBlock(32, 32),
@@ -125,14 +133,14 @@ class Unet(nn.Module):
         conv1 = nn.Sequential(
             DownSample(32, 64),
             # ResBlock(64, 64),
-            NoiseInjection(0.2),
+            NoiseInjection(0.3),
 
         )
         # 64 w/2 h/2
         conv2 = nn.Sequential(
             DownSample(64, 128),
             # ResBlock(128, 128),
-            NoiseInjection(0.1),
+            NoiseInjection(0.2),
         )
         # 128 w/4 h/4
         conv3 = nn.Sequential(
@@ -149,15 +157,15 @@ class Unet(nn.Module):
 
         res = nn.Sequential(
             ResBlock(256, 256),
-            NoiseInjection(0.1),
+            # NoiseInjection(0.1),
             ResBlock(256, 256),
-            NoiseInjection(0.1),
+            # NoiseInjection(0.1),
         )
         res2 = nn.Sequential(
             ResBlock(128, 128),
-            NoiseInjection(0.1),
+            # NoiseInjection(0.1),
             ResBlock(128, 128),
-            NoiseInjection(0.1),
+            # NoiseInjection(0.1),
         )
         # 512 w/16 h/16
 
@@ -175,13 +183,13 @@ class Unet(nn.Module):
         upsample2 = nn.Sequential(
             UpSample(128, 64),
             # ResBlock(64, 64),
-            NoiseInjection(0.1),
+            # NoiseInjection(0.2),
         )
 
         upsample1 = nn.Sequential(
             UpSample(64, 32),
             # ResBlock(32, 32),
-            NoiseInjection(0.2),
+            # NoiseInjection(0.3),
         )
 
         # deconv4 = nn.Sequential(
@@ -191,23 +199,23 @@ class Unet(nn.Module):
 
         deconv3 = nn.Sequential(
             ResBlock(256, 128),
-            NoiseInjection(0.1),
+            # NoiseInjection(0.1),
             ResBlock(128, 128),
-            NoiseInjection(0.1)
+            # NoiseInjection(0.1)
         )
 
         deconv2 = nn.Sequential(
             ResBlock(128, 64),
-            NoiseInjection(0.1),
+            # NoiseInjection(0.2),
             ResBlock(64, 64),
-            NoiseInjection(0.1)
+            # NoiseInjection(0.2)
         )
 
         deconv1 = nn.Sequential(
             ResBlock(64, 32),
-            NoiseInjection(0.2),
+            # NoiseInjection(0.3),
             ResBlock(32, 32),
-            NoiseInjection(0.2)
+            # NoiseInjection(0.3)
         )
 
         postprocess = nn.Sequential(

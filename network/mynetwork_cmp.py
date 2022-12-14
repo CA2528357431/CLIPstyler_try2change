@@ -92,10 +92,14 @@ class Unet(nn.Module):
         preprocess = nn.Sequential(
             # nn.ReflectionPad2d(4),
             # nn.Conv2d(3, 32, kernel_size=(9, 9)),
-            nn.Conv2d(3, 32, kernel_size=(9, 9), padding=4),
+            # nn.Conv2d(3, 32, kernel_size=(9, 9), padding=4),
+            nn.ReflectionPad2d(1),
+            nn.Conv2d(3, 32, kernel_size=(3, 3)),
+            # nn.Conv2d(3, 32, kernel_size=(3, 3), padding=1),
             nn.InstanceNorm2d(32),
             nn.ReLU(),
             ResBlock(32, 32),
+            #             NoiseInjection(0.2),
         )
         # 32 w h
         conv1 = nn.Sequential(
