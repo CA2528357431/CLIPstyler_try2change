@@ -27,8 +27,8 @@ class DownSample(nn.Module):
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1, stride=2),
-            # nn.MaxPool2d(2),
+            # nn.Conv2d(out_channel, out_channel, kernel_size=(3, 3), padding=1, stride=2),
+            nn.MaxPool2d(2),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -65,8 +65,8 @@ class UpSample(nn.Module):
             nn.ReLU(),
         )
         block2 = nn.Sequential(
-            nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(3, 3), padding=(1, 1), stride=2, output_padding=1),
-            # nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True),
+            # nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(3, 3), padding=(1, 1), stride=2, output_padding=1),
+            nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -189,7 +189,7 @@ class Unet(nn.Module):
         upsample1 = nn.Sequential(
             UpSample(64, 32),
             # ResBlock(32, 32),
-            NoiseInjection(0.2),
+            NoiseInjection(0.1),
         )
 
         # deconv4 = nn.Sequential(
@@ -213,9 +213,9 @@ class Unet(nn.Module):
 
         deconv1 = nn.Sequential(
             ResBlock(64, 32),
-            NoiseInjection(0.2),
+            NoiseInjection(0.1),
             ResBlock(32, 32),
-            NoiseInjection(0.2)
+            NoiseInjection(0.1)
         )
 
         postprocess = nn.Sequential(
