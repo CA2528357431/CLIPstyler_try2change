@@ -155,7 +155,8 @@ class CLIPLoss(torch.nn.Module):
         return code
 
     def compose_text_with_templates(self, text: str, templates=imagenet_templates) -> list:
-        return [template.format(text) for template in templates]
+        # return [template.format(text) for template in templates]
+        return  text
 
     def get_text_features(self, class_str: str, templates=imagenet_templates, norm: bool = True) -> torch.Tensor:
         template_text = self.compose_text_with_templates(class_str, templates)
