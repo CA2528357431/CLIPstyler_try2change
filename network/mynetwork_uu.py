@@ -165,7 +165,7 @@ class Unet(nn.Module):
             ResBlock(128, 128),
             NoiseInjection(0.1),
             ResBlock(128, 128),
-            NoiseInjection(0.1),
+            NoiseInjection(0.02),
         )
         # 512 w/16 h/16
 
@@ -177,19 +177,19 @@ class Unet(nn.Module):
         upsample3 = nn.Sequential(
             UpSample(256, 128),
             # ResBlock(128, 128),
-            NoiseInjection(0.1),
+            NoiseInjection(0.02),
         )
 
         upsample2 = nn.Sequential(
             UpSample(128, 64),
             # ResBlock(64, 64),
-            NoiseInjection(0.1),
+            NoiseInjection(0.02),
         )
 
         upsample1 = nn.Sequential(
             UpSample(64, 32),
             # ResBlock(32, 32),
-            NoiseInjection(0.1),
+            NoiseInjection(0.02),
         )
 
         # deconv4 = nn.Sequential(
@@ -199,23 +199,23 @@ class Unet(nn.Module):
 
         deconv3 = nn.Sequential(
             ResBlock(256, 128),
-            NoiseInjection(0.1),
+            NoiseInjection(0.02),
             ResBlock(128, 128),
-            NoiseInjection(0.1)
+            NoiseInjection(0.02)
         )
 
         deconv2 = nn.Sequential(
             ResBlock(128, 64),
-            NoiseInjection(0.1),
+            NoiseInjection(0.02),
             ResBlock(64, 64),
-            NoiseInjection(0.1)
+            NoiseInjection(0.02)
         )
 
         deconv1 = nn.Sequential(
             ResBlock(64, 32),
-            NoiseInjection(0.1),
+            NoiseInjection(0.02),
             ResBlock(32, 32),
-            NoiseInjection(0.1)
+            NoiseInjection(0.02)
         )
 
         postprocess = nn.Sequential(
