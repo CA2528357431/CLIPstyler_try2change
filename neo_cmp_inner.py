@@ -4,7 +4,7 @@ import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
 
-from network.mynetwork import Unet
+from network.mynetwork_uu import Unet
 from loss.loss import CLIPLoss
 from utils.func import get_features,vgg_normalize
 

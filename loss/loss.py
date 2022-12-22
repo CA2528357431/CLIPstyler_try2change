@@ -155,8 +155,7 @@ class CLIPLoss(torch.nn.Module):
         return code
 
     def compose_text_with_templates(self, text: str, templates=imagenet_templates) -> list:
-        # return [template.format(text) for template in templates]
-        return  text
+        return [template.format(text) for template in templates]
 
     def get_text_features(self, class_str: str, templates=imagenet_templates, norm: bool = True) -> torch.Tensor:
         template_text = self.compose_text_with_templates(class_str, templates)
@@ -256,7 +255,7 @@ class CLIPLoss(torch.nn.Module):
             self.target_direction = self.compute_text_direction(source_class, target_class).detach()
 
         patch_size = 128
-        patch_num = 128
+        patch_num = 64
 
         patch_points = self.random_patch_points(src_img.shape, patch_num, patch_size)
 
@@ -270,6 +269,7 @@ class CLIPLoss(torch.nn.Module):
         edit_direction /= edit_direction.clone().norm(dim=-1, keepdim=True)
 
         dirs = self.direction_loss(edit_direction, self.target_direction)
+        # dirs[dirs < 0.7] = 0
         # with torch.no_grad():
         #     avg = dirs.mean()
         # #     delta = ((dirs-avg)**2).mean()
