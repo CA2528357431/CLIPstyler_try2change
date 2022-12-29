@@ -10,19 +10,19 @@ class NoiseInjection(nn.Module):
     def forward(self, image):
         batch, channel, height, width = image.shape
         noise = image.new_empty(batch, channel, height, width).normal_()
-        # return image + self.weight * noise
-        return image
+        return image + self.weight * noise
+        # return image
 
 class DownSample(nn.Module):
     def __init__(self, in_channel, out_channel):
         super().__init__()
         block1 = nn.Sequential(
             # nn.ReflectionPad2d(1),
-            # nn.Conv2d(in_channel, in_channel, kernel_size=(3, 3), padding=0),
+            # nn.Conv2d(in_channel, in_channel, kernel_size=(3, 3), padding=1),
             # nn.InstanceNorm2d(in_channel),
             # nn.ReLU(),
-            # nn.ReflectionPad2d(1),
-            nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=1),
+            nn.ReflectionPad2d(1),
+            nn.Conv2d(in_channel, out_channel, kernel_size=(3, 3), padding=0),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),
         )
@@ -33,24 +33,21 @@ class DownSample(nn.Module):
             nn.ReLU(),
         )
         skip = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, kernel_size=(1, 1), stride=2),
-            nn.InstanceNorm2d(out_channel),
-            nn.ReLU(),
+            nn.Conv2d(in_channel, out_channel, kernel_size=(1, 1)),
         )
 
         self.block1 = block1
         self.block2 = block2
         self.skip = skip
-#         self.noise = NoiseInjection()
-
-
+        # self.noise = NoiseInjection()
 
 
     def forward(self, x):
-        res = self.block1(x)
-        res = self.block2(res) + self.skip(x)
+        x = self.block1(x) + self.skip(x)
+        res = self.block2(x)
         # res = self.noise(res)
         return res
+
 
 class UpSample(nn.Module):
     def __init__(self, in_channel, out_channel):
@@ -71,10 +68,8 @@ class UpSample(nn.Module):
             nn.ReLU(),
         )
         skip = nn.Sequential(
-            nn.ConvTranspose2d(in_channel, out_channel, kernel_size=(1, 1), stride=2, output_padding=1),
+            nn.ConvTranspose2d(in_channel, out_channel, kernel_size=(1, 1)),
             # nn.Conv2d(in_channel, out_channel, kernel_size=(1, 1)),
-            nn.InstanceNorm2d(out_channel),
-            nn.ReLU(),
         )
 
         self.block1 = block1
@@ -84,8 +79,8 @@ class UpSample(nn.Module):
 
 
     def forward(self, x):
-        res = self.block1(x)
-        res = self.block2(res) + self.skip(x)
+        x = self.block1(x) + self.skip(x)
+        res = self.block2(x)
         # res = self.noise(res)
         return res
 
