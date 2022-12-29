@@ -287,11 +287,11 @@ class CLIPLoss(torch.nn.Module):
         return dirs.mean()
 
 
-    def get_image_prior_losses(self, inputs_jit):
-        diff1 = inputs_jit[:, :, :, :-1] - inputs_jit[:, :, :, 1:]
-        diff2 = inputs_jit[:, :, :-1, :] - inputs_jit[:, :, 1:, :]
-        diff3 = inputs_jit[:, :, 1:, :-1] - inputs_jit[:, :, :-1, 1:]
-        diff4 = inputs_jit[:, :, :-1, :-1] - inputs_jit[:, :, 1:, 1:]
+    def get_image_prior_losses(self, img):
+        diff1 = img[:, :, :, :-1] - img[:, :, :, 1:]
+        diff2 = img[:, :, :-1, :] - img[:, :, 1:, :]
+        diff3 = img[:, :, 1:, :-1] - img[:, :, :-1, 1:]
+        diff4 = img[:, :, :-1, :-1] - img[:, :, 1:, 1:]
 
         loss_var_l2 = torch.norm(diff1) + torch.norm(diff2) + torch.norm(diff3) + torch.norm(diff4)
 
@@ -329,6 +329,11 @@ class CLIPLoss(torch.nn.Module):
         # loss.requires_grad = True
 
         return patch_loss
+
+    def forward_prior(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor, target_class: str):
+        prior_loss = 1 * self.get_image_prior_losses(target_img)
+
+        return prior_loss
 
 
     def patch_directional_loss_sec(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor,
