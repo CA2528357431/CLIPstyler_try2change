@@ -63,6 +63,7 @@ class UpSample(nn.Module):
         )
         block2 = nn.Sequential(
             # nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(3, 3), padding=(1, 1), stride=2, output_padding=1),
+            # nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
             nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True),
             nn.InstanceNorm2d(out_channel),
             nn.ReLU(),

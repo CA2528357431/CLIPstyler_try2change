@@ -70,6 +70,7 @@ class Preprocess(torch.nn.Module):
         self.device = device
 
     def forward(self, x):
+        # x = F.interpolate(x, size=(224, 224), mode='bilinear', align_corners=True)
         x = F.interpolate(x, size=(224, 224), mode='bicubic', align_corners=True)
         mean = torch.tensor([0.48145466, 0.4578275, 0.40821073])
         mean = mean.reshape(1, 3, 1, 1)
