@@ -10,8 +10,8 @@ class NoiseInjection(nn.Module):
     def forward(self, image):
         batch, channel, height, width = image.shape
         noise = image.new_empty(batch, channel, height, width).normal_()
-        return image + self.weight * noise
-        # return image
+        # return image + self.weight * noise
+        return image
 
 class DownSample(nn.Module):
     def __init__(self, in_channel, out_channel):
@@ -129,20 +129,20 @@ class Unet(nn.Module):
         conv1 = nn.Sequential(
             DownSample(32, 64),
             # ResBlock(64, 64),
-            NoiseInjection(0.1),
+            NoiseInjection(0.05),
 
         )
         # 64 w/2 h/2
         conv2 = nn.Sequential(
             DownSample(64, 128),
             # ResBlock(128, 128),
-            NoiseInjection(0.1),
+            NoiseInjection(0.05),
         )
         # 128 w/4 h/4
         conv3 = nn.Sequential(
             DownSample(128, 256),
             # ResBlock(256, 256),
-            NoiseInjection(0.2),
+            NoiseInjection(0.1),
         )
         # 256 w/8 h/8
         # conv4 = nn.Sequential(
@@ -153,15 +153,15 @@ class Unet(nn.Module):
 
         res = nn.Sequential(
             ResBlock(256, 256),
-            NoiseInjection(0.2),
+            NoiseInjection(0.1),
             ResBlock(256, 256),
-            NoiseInjection(0.2),
+            NoiseInjection(0.1),
         )
         res2 = nn.Sequential(
             ResBlock(128, 128),
-            NoiseInjection(0.1),
+            NoiseInjection(0.05),
             ResBlock(128, 128),
-            NoiseInjection(0.1),
+            NoiseInjection(0.05),
         )
         # 512 w/16 h/16
 
@@ -197,21 +197,21 @@ class Unet(nn.Module):
             ResBlock(256, 128),
             NoiseInjection(0.2),
             # ResBlock(128, 128),
-            # NoiseInjection(0.02),
+            # NoiseInjection(0.05),
         )
 
         deconv2 = nn.Sequential(
             ResBlock(128, 64),
             NoiseInjection(0.1),
             # ResBlock(64, 64),
-            # NoiseInjection(0.02),
+            # NoiseInjection(0.05),
         )
 
         deconv1 = nn.Sequential(
             ResBlock(64, 32),
             NoiseInjection(0.1),
             # ResBlock(32, 32),
-            # NoiseInjection(0.02),
+            # NoiseInjection(0.05),
         )
 
         postprocess = nn.Sequential(

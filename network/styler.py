@@ -8,7 +8,7 @@ class UpBlock(nn.Module):
     def __init__(self, in_channel=128, out_channel=64):
         super().__init__()
 
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
         self.conv = nn.Sequential(
             nn.Conv2d(out_channel + in_channel, out_channel,
                       3, 1, 1),
@@ -75,7 +75,7 @@ class EncodingBlock(nn.Module):
 
 class Unet(nn.Module):
     def __init__(self, ngf=16, input_channel=3, output_channel=3):
-        super().__init__()
+        super(Unet, self).__init__()
         self.conv_init = nn.Conv2d(input_channel, ngf, 1, 1, 0)
         self.init = EncodingBlock(ngf, ngf)
         self.down1 = DownBlock(ngf, ngf)

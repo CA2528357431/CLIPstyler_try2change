@@ -5,6 +5,8 @@ import torch.nn.functional as F
 
 import numpy as np
 
+import random
+
 import math
 import clip
 from PIL import Image
@@ -37,7 +39,7 @@ class FC(nn.Module):
 
     def forward(self, x):
         # x = x.float()
-        x = self.block(x)
+        # x = self.block(x.float())
         # min = x.min()
         # max = x.max()
         # x = (x-min)/(max-min)
@@ -131,11 +133,12 @@ class CLIPLoss(torch.nn.Module):
         # else:
         #     self.fc.block.apply(init_fc)
 
-
-
         self.target_direction = None
         self.src_text_features = None
         self.patch_text_directions = None
+
+        self.patch_points = torch.zeros(0, 2).int()
+        self.patch_size = 384
 
     def tokenize(self, strings):
         return clip.tokenize(strings).to(self.device)
@@ -219,15 +222,16 @@ class CLIPLoss(torch.nn.Module):
 
         text_v = self.encode_text(tokens)
         image_v = self.encode_images(image)
-        logits_per_image = torch.nn.functional.cosine_similarity(image_v,text_v).unsqueeze(0)
+        logits_per_image = torch.nn.functional.cosine_similarity(image_v, text_v).unsqueeze(0)
 
         return (1. - logits_per_image / 100).mean()
 
     def random_patch_points(self, img_shape, num_patches, size):
         batch_size, channels, height, width = img_shape
+        half = size // 2
 
-        w = torch.randint(low=0, high=width - size, size=(num_patches, 1))
-        h = torch.randint(low=0, high=height - size, size=(num_patches, 1))
+        w = torch.randint(low=half, high=width - half, size=(num_patches, 1))
+        h = torch.randint(low=half, high=height - half, size=(num_patches, 1))
         points = torch.cat([h, w], dim=1)
 
         return points
@@ -237,11 +241,12 @@ class CLIPLoss(torch.nn.Module):
         num_patches = patch_points.shape[0]
 
         patches = []
+        half = size // 2
 
         for patch_idx in range(num_patches):
             point_x = patch_points[0 * num_patches + patch_idx][0]
             point_y = patch_points[0 * num_patches + patch_idx][1]
-            patch = img[0:1, :, point_y:point_y + size, point_x:point_x + size]
+            patch = img[0:1, :, point_y - half:point_y + half, point_x - half:point_x + half]
             patch = torch.nn.functional.interpolate(patch, (512, 512), mode="bilinear", align_corners=True)
             patches.append(patch)
 
@@ -273,20 +278,9 @@ class CLIPLoss(torch.nn.Module):
         # dirs[dirs < 0.7] = 0
         # with torch.no_grad():
         #     avg = dirs.mean()
-        # #     delta = ((dirs-avg)**2).mean()
-        # # # cnt = 0
-        #
-        #
-        # fast = torch.zeros(1,).to(self.device)
-        # slow = torch.zeros(1,).to(self.device)
-        # for i in range(patch_num):
-        #     if dirs[i] <= avg:
-        #         fast += dirs[i]
-        #     elif dirs[i] >= avg:
-        #         slow += dirs[i]
+        #     delta = ((dirs-avg)**2).mean()
 
         return dirs.mean()
-
 
     def get_image_prior_losses(self, img):
         diff1 = img[:, :, :, :-1] - img[:, :, :, 1:]
@@ -336,17 +330,20 @@ class CLIPLoss(torch.nn.Module):
 
         return prior_loss
 
-
     def patch_directional_loss_sec(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor,
-                               target_class: str):
+                                   target_class: str):
 
         if self.target_direction is None:
             self.target_direction = self.compute_text_direction(source_class, target_class).detach()
 
-        patch_size = 128
+        # patch_size_li = [32,64,128,256]
+        # patch_size = patch_size_li[random.randint(0,3)]
+        patch_size = self.patch_size
         patch_num = 64
 
-        patch_points = self.random_patch_points(src_img.shape, patch_num, patch_size)
+        new_points_num = patch_num - self.patch_points.shape[0]
+        patch_points = torch.cat(
+            [self.patch_points, self.random_patch_points(src_img.shape, new_points_num, patch_size)], dim=0)
 
         src_patches = self.generate_patches(src_img, patch_points, patch_size)
         src_features = self.get_image_features(src_patches)
@@ -360,20 +357,31 @@ class CLIPLoss(torch.nn.Module):
         dirs = self.direction_loss(edit_direction, self.target_direction)
         with torch.no_grad():
             avg = dirs.mean()
+        dirs[dirs < min(0.5,avg.item())] = 0
         #     delta = ((dirs-avg)**2).mean()
         # # cnt = 0
 
+        next_points = []
 
-        fast = torch.zeros(1,).to(self.device)
-        slow = torch.zeros(1,).to(self.device)
+        fast = torch.zeros(1, ).to(self.device)
+        slow = torch.zeros(1, ).to(self.device)
         for i in range(patch_num):
             if dirs[i] <= avg:
                 fast += dirs[i]
             else:
                 slow += dirs[i]
 
+                half = patch_size // 2 - 1
+                y, x = patch_points[i]
+                if y - half >= 0 and y + half <= 512 and x - half >= 0 and x + half <= 512:
+                    next_points.append(patch_points[i])
+        if next_points:
+            self.patch_points = torch.stack(next_points, dim=0)
+        else:
+            self.patch_points = torch.zeros(0, 2).int()
+        self.patch_size -= 2
 
-        return fast/patch_num, slow/patch_num
+        return fast / patch_num, slow / patch_num
 
     def forward_patch_sec(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor, target_class: str):
 
@@ -385,10 +393,8 @@ class CLIPLoss(torch.nn.Module):
         # loss += loss1 + loss2 + loss3 + loss4
         # loss.requires_grad = True
         fast, slow = 1 * self.patch_directional_loss_sec(src_img, source_class, target_img,
-                                                                             target_class)
+                                                         target_class)
         return fast, slow
-
-
 
     ################################################################
 
@@ -454,17 +460,16 @@ class CLIPLoss(torch.nn.Module):
     #
     #
 
-
-        #
-        # dirs = self.direction_loss(edit_direction, self.target_direction)
-        # # print(dirs)
-        # avg = dirs.mean()
-        # sqr = ((dirs-avg)**2).mean()
-        # sqr = 0
-        # s = 0
-        # cnt = 0
-        # for x in dirs:
-        #     if x>=avg-sqr:
-        #         s+=x
-        #         cnt+=1
-        # return s/cnt
+    #
+    # dirs = self.direction_loss(edit_direction, self.target_direction)
+    # # print(dirs)
+    # avg = dirs.mean()
+    # sqr = ((dirs-avg)**2).mean()
+    # sqr = 0
+    # s = 0
+    # cnt = 0
+    # for x in dirs:
+    #     if x>=avg-sqr:
+    #         s+=x
+    #         cnt+=1
+    # return s/cnt
