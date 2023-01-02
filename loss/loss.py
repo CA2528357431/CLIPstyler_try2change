@@ -118,10 +118,11 @@ class CLIPLoss(torch.nn.Module):
         #     clip_preprocess.transforms
         # )
 
-        self.texture_loss = torch.nn.MSELoss()
+        # self.texture_loss = torch.nn.MSELoss()
         # self.angle_loss = torch.nn.L1Loss()
         # self.patch_loss = DirectionLoss("mae")
-        self.patch_direction_loss = torch.nn.CosineSimilarity(dim=2)
+
+        # self.patch_direction_loss = torch.nn.CosineSimilarity(dim=2)
 
         self.direction_loss = DirectionLoss(direction_loss_type)
 
@@ -218,11 +219,11 @@ class CLIPLoss(torch.nn.Module):
 
         # images = torch.nn.functional.interpolate(image, (224, 224))
 
-        # logits_per_image, _ = self.model(image, tokens)
+        logits_per_image, _ = self.model(image, tokens)
 
-        text_v = self.encode_text(tokens)
-        image_v = self.encode_images(image)
-        logits_per_image = torch.nn.functional.cosine_similarity(image_v, text_v).unsqueeze(0)
+        # text_v = self.encode_text(tokens)
+        # image_v = self.encode_images(image)
+        # logits_per_image = torch.nn.functional.cosine_similarity(image_v, text_v).unsqueeze(0)
 
         return (1. - logits_per_image / 100).mean()
 
@@ -357,9 +358,9 @@ class CLIPLoss(torch.nn.Module):
         dirs = self.direction_loss(edit_direction, self.target_direction)
         with torch.no_grad():
             avg = dirs.mean()
-        dirs[dirs < min(0.5,avg.item())] = 0
-        #     delta = ((dirs-avg)**2).mean()
-        # # cnt = 0
+            dirs[dirs < min(0.5,avg.item())] = 0
+            # delta = ((dirs-avg)**2).mean()
+        # cnt = 0
 
         next_points = []
 
@@ -379,7 +380,9 @@ class CLIPLoss(torch.nn.Module):
             self.patch_points = torch.stack(next_points, dim=0)
         else:
             self.patch_points = torch.zeros(0, 2).int()
-        self.patch_size -= 2
+
+        if self.patch_size <= 128:
+            self.patch_size -= 2
 
         return fast / patch_num, slow / patch_num
 

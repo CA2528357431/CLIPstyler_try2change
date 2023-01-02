@@ -113,7 +113,7 @@ pic.requires_grad = False
 
 source = "photo"
 target = "Fire"
-path = "result2.jpg"
+path = "result/result2.jpg"
 
 start = time.time()
 train(200, 200, pic, source, target, path)
