@@ -215,15 +215,15 @@ class CLIPLoss(torch.nn.Module):
 
         # image = self.preprocess(img.squeeze(0).cpu())
         # image = image.to(self.device).unsqueeze(0)
-        image = self.preprocess(img)
+        # image = self.preprocess(img)
 
         # images = torch.nn.functional.interpolate(image, (224, 224))
 
-        logits_per_image, _ = self.model(image, tokens)
+        # logits_per_image, _ = self.model(image, tokens)
 
-        # text_v = self.encode_text(tokens)
-        # image_v = self.encode_images(image)
-        # logits_per_image = torch.nn.functional.cosine_similarity(image_v, text_v).unsqueeze(0)
+        text_v = self.encode_text(tokens)
+        image_v = self.encode_images(img)
+        logits_per_image = torch.nn.functional.cosine_similarity(image_v, text_v).unsqueeze(0)
 
         return (1. - logits_per_image / 100).mean()
 
@@ -337,8 +337,8 @@ class CLIPLoss(torch.nn.Module):
         if self.target_direction is None:
             self.target_direction = self.compute_text_direction(source_class, target_class).detach()
 
-        # patch_size_li = [32,64,128,256]
-        # patch_size = patch_size_li[random.randint(0,3)]
+        # tokens = self.tokenize(self.compose_text_with_templates(target_class))
+
         patch_size = self.patch_size
         patch_num = 64
 
@@ -355,7 +355,15 @@ class CLIPLoss(torch.nn.Module):
         edit_direction = (target_features - src_features)
         edit_direction /= edit_direction.clone().norm(dim=-1, keepdim=True)
 
+        # text_v = self.encode_text(tokens)
+        # image_v = self.encode_images(target_patches)
+        # logits_per_image = torch.nn.functional.cosine_similarity(image_v, text_v).unsqueeze(0)
+        # logits_per_image = torch.sum(logits_per_image, dim=0, keepdim=True)
+
         dirs = self.direction_loss(edit_direction, self.target_direction)
+
+        # dirs+=logits_per_image*3
+
         with torch.no_grad():
             avg = dirs.mean()
             dirs[dirs < min(0.5,avg.item())] = 0
@@ -381,7 +389,7 @@ class CLIPLoss(torch.nn.Module):
         else:
             self.patch_points = torch.zeros(0, 2).int()
 
-        if self.patch_size <= 128:
+        if self.patch_size >= 64:
             self.patch_size -= 2
 
         return fast / patch_num, slow / patch_num
