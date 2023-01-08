@@ -72,8 +72,8 @@ class Preprocess(torch.nn.Module):
         self.device = device
 
     def forward(self, x):
-        x = F.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
-        # x = F.interpolate(x, size=(224, 224), mode='bicubic', align_corners=True)
+        # x = F.interpolate(x, size=(224, 224), mode='bilinear', align_corners=True)
+        x = F.interpolate(x, size=(224, 224), mode='bicubic', align_corners=True)
         mean = torch.tensor([0.48145466, 0.4578275, 0.40821073])
         mean = mean.reshape(1, 3, 1, 1)
         mean = mean.expand(x.shape).to(self.device)
@@ -137,11 +137,10 @@ class CLIPLoss(torch.nn.Module):
         self.target_direction = None
         self.src_text_features = None
         self.patch_text_directions = None
+        self.standard = None
 
         self.patch_points = torch.zeros(0, 2).int()
-        self.patch_size = 400
-        self.treshold = 0.50
-        self.top_lambda = 1
+        self.patch_size = 128
 
     def tokenize(self, strings):
         return clip.tokenize(strings).to(self.device)
@@ -338,6 +337,10 @@ class CLIPLoss(torch.nn.Module):
 
         if self.target_direction is None:
             self.target_direction = self.compute_text_direction(source_class, target_class).detach()
+        if self.standard is None:
+            self.standard = self.target_direction
+        # print(self.standard.shape)
+        # tokens = self.tokenize(self.compose_text_with_templates(target_class))
 
         patch_size = self.patch_size
         patch_num = 64
@@ -355,30 +358,32 @@ class CLIPLoss(torch.nn.Module):
         edit_direction = (target_features - src_features)
         edit_direction /= edit_direction.clone().norm(dim=-1, keepdim=True)
 
-        dirs = self.direction_loss(edit_direction, self.target_direction)
+        # text_v = self.encode_text(tokens)
+        # image_v = self.encode_images(target_patches)
+        # logits_per_image = torch.nn.functional.cosine_similarity(image_v, text_v).unsqueeze(0)
+        # logits_per_image = torch.sum(logits_per_image, dim=0, keepdim=True)
 
+
+
+        dirs = self.direction_loss(edit_direction, self.standard)
 
         with torch.no_grad():
-            li = [x.item() for x in dirs]
+            dirs_fk = self.direction_loss(edit_direction, self.target_direction)
+            avg_fk = dirs_fk.mean()
             avg = dirs.mean()
-            dirs[dirs < min(self.treshold,avg.item())] = 0
-
-        # cnt = 0
-
-        toploss = torch.max(dirs)
+            # dirs[dirs < min(0.5,avg.item())] = 0
 
         next_points = []
 
-        fast = torch.zeros(1, ).to(self.device) + toploss*self.top_lambda
-        slow = torch.zeros(1, ).to(self.device) + toploss*self.top_lambda
-
+        fast = torch.zeros(1, ).to(self.device)
+        slow = torch.zeros(1, ).to(self.device)
         for i in range(patch_num):
             if dirs[i] <= avg:
                 fast += dirs[i]
             else:
                 slow += dirs[i]
 
-                half = patch_size // 2 - 4
+                half = patch_size // 2 + 1
                 y, x = patch_points[i]
                 if y - half >= 0 and y + half <= 512 and x - half >= 0 and x + half <= 512:
                     next_points.append(patch_points[i])
@@ -387,11 +392,13 @@ class CLIPLoss(torch.nn.Module):
         else:
             self.patch_points = torch.zeros(0, 2).int()
 
-        if self.patch_size >= 64:
-            self.patch_size -= 2
-            # self.treshold += 0.0002
+        self.patch_size += 2
 
-        return fast / patch_num, slow / patch_num, li
+        nums = (dirs_fk>avg_fk).sum()
+        dirss = (edit_direction[dirs_fk>avg_fk]).sum(axis=0, keepdim=True)
+        self.standard = (dirss/nums).detach()
+
+        return fast / patch_num, slow / patch_num
 
     def forward_patch_sec(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor, target_class: str):
 
@@ -402,9 +409,9 @@ class CLIPLoss(torch.nn.Module):
         # print(loss1.item(),loss2.item(),loss3.item(),loss4.item())
         # loss += loss1 + loss2 + loss3 + loss4
         # loss.requires_grad = True
-        fast, slow, li = 1 * self.patch_directional_loss_sec(src_img, source_class, target_img,
+        fast, slow = 1 * self.patch_directional_loss_sec(src_img, source_class, target_img,
                                                          target_class)
-        return fast, slow, li
+        return fast, slow
 
     ################################################################
 
