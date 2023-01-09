@@ -139,9 +139,10 @@ class CLIPLoss(torch.nn.Module):
         self.patch_text_directions = None
 
         self.patch_points = torch.zeros(0, 2).int()
-        self.patch_size = 400
+        self.patch_size = 300
         self.treshold = 0.50
         self.top_lambda = 1
+        self.right_patch = 0
 
     def tokenize(self, strings):
         return clip.tokenize(strings).to(self.device)
@@ -378,16 +379,17 @@ class CLIPLoss(torch.nn.Module):
             else:
                 slow += dirs[i]
 
-                half = patch_size // 2 - 4
+                half = patch_size // 2 - 1
                 y, x = patch_points[i]
                 if y - half >= 0 and y + half <= 512 and x - half >= 0 and x + half <= 512:
                     next_points.append(patch_points[i])
+                    self.right_patch+=1
         if next_points:
             self.patch_points = torch.stack(next_points, dim=0)
         else:
             self.patch_points = torch.zeros(0, 2).int()
 
-        if self.patch_size >= 64:
+        if self.patch_size >= 32:
             self.patch_size -= 2
             # self.treshold += 0.0002
 
