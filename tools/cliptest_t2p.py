@@ -3,8 +3,8 @@ import clip
 from PIL import Image
 
 device = "cuda"
-# pil = Image.open(f"../source_pic/sunflower.jpg")
-pil = Image.open(f"../result/result0.jpg")
+pil1 = Image.open(f"../source_pic/sunflower.jpg")
+pil2 = Image.open(f"../result/result0.jpg")
 
 model,pre = clip.load('ViT-B/32', device=device)
 
