@@ -34,12 +34,15 @@ class SpatialAttention(nn.Module):
         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()  # sigmoid激活操作
 
+        self.hot = None
+
     def forward(self, x):
         avg_out = torch.mean(x, dim=1, keepdim=True)  # 在通道的维度上，取所有特征点的平均值  b,1,h,w
         max_out, _ = torch.max(x, dim=1, keepdim=True)  # 在通道的维度上，取所有特征点的最大值  b,1,h,w
         x = torch.cat([avg_out, max_out], dim=1)  # 在第一维度上拼接，变为 b,2,h,w
         x = self.conv1(x)  # 转换为维度，变为 b,1,h,w
-        return self.sigmoid(x)  # sigmoid激活操作
+        self.hot = self.sigmoid(x)  # sigmoid激活操作
+        return self.hot
 
 
 class cbamblock(nn.Module):
@@ -60,7 +63,7 @@ class NoiseInjection(nn.Module):
     def __init__(self, weight):
         super().__init__()
 
-        self.weight = weight
+        self.weight = weight*5
 
     def forward(self, image):
         batch, channel, height, width = image.shape
@@ -303,7 +306,7 @@ class Unet(nn.Module):
         )
 
         postprocess = nn.Sequential(
-            nn.Conv2d(32, 3, kernel_size=(3, 3), padding=1),
+            nn.Conv2d(32, 3, kernel_size=(3, 3), padding=(1, 1)),
             # nn.Tanh(),
             nn.Sigmoid(),
 
@@ -328,6 +331,8 @@ class Unet(nn.Module):
         self.upsample3 = upsample3.to(device)
         # self.upsample4 = upsample4.to(device)
         self.postprocess = postprocess.to(device)
+
+
 
     def forward(self, x):
         x = x.to(self.device)

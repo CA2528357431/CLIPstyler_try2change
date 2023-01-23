@@ -139,10 +139,11 @@ class CLIPLoss(torch.nn.Module):
         self.patch_text_directions = None
 
         self.patch_points = torch.zeros(0, 2).int()
-        self.patch_size = 300
-        self.treshold = 0.50
+        self.patch_size = 384
+        self.treshold = 0.7
         self.top_lambda = 1
-        self.right_patch = 0
+        self.right_patch = []
+
 
     def tokenize(self, strings):
         return clip.tokenize(strings).to(self.device)
@@ -275,11 +276,14 @@ class CLIPLoss(torch.nn.Module):
         target_patches = self.generate_patches(target_img, patch_points, patch_size)
         target_features = self.get_image_features(target_patches)
 
+        # src_feature = self.get_image_features(src_img)
+        # src_features = src_feature.expand(target_features.shape)
+
         edit_direction = (target_features - src_features)
         edit_direction /= edit_direction.clone().norm(dim=-1, keepdim=True)
 
         dirs = self.direction_loss(edit_direction, self.target_direction)
-        dirs[dirs < 0.7] = 0
+        # dirs[dirs < 0.7] = 0
         # with torch.no_grad():
         #     avg = dirs.mean()
         #     delta = ((dirs-avg)**2).mean()
@@ -295,6 +299,10 @@ class CLIPLoss(torch.nn.Module):
         loss_var_l2 = torch.norm(diff1) + torch.norm(diff2) + torch.norm(diff3) + torch.norm(diff4)
 
         return loss_var_l2
+
+
+
+
 
     def forward_gol(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor, target_class: str):
 
@@ -370,20 +378,50 @@ class CLIPLoss(torch.nn.Module):
 
         next_points = []
 
-        fast = torch.zeros(1, ).to(self.device) + toploss*self.top_lambda
-        slow = torch.zeros(1, ).to(self.device) + toploss*self.top_lambda
+        fast = torch.zeros(1, ).to(self.device) + toploss * self.top_lambda
+        slow = torch.zeros(1, ).to(self.device) + toploss * self.top_lambda
 
+        right_patch = 0
         for i in range(patch_num):
             if dirs[i] <= avg:
                 fast += dirs[i]
             else:
                 slow += dirs[i]
 
+        for i in range(patch_num):
+            if dirs[i] > avg:
+            # if dirs[i] > avg*1000:
                 half = patch_size // 2 - 1
                 y, x = patch_points[i]
                 if y - half >= 0 and y + half <= 512 and x - half >= 0 and x + half <= 512:
                     next_points.append(patch_points[i])
-                    self.right_patch+=1
+                    right_patch += 1
+        self.right_patch.append(right_patch)
+
+
+
+        # fast = torch.zeros(1, ).to(self.device) + toploss*self.top_lambda
+        # slow = torch.zeros(1, ).to(self.device) + toploss*self.top_lambda
+        #
+        # soft = torch.softmax(dirs,dim=0)
+        # li = [x for x in range(patch_num)]
+        # li.sort(key=lambda x:soft[x].item())
+        # right_patch = 0
+        # for ind in range(patch_num):
+        #     i = li[ind]
+        #     if ind < patch_num//2:
+        #         fast += dirs[i]
+        #     else:
+        #         slow += dirs[i]
+        #         half = patch_size // 2 - 1
+        #         y, x = patch_points[i]
+        #         if y - half >= 0 and y + half <= 512 and x - half >= 0 and x + half <= 512:
+        #             next_points.append(patch_points[i])
+        #             right_patch += 1
+        # self.right_patch.append(right_patch)
+
+
+
         if next_points:
             self.patch_points = torch.stack(next_points, dim=0)
         else:
